@@ -22,19 +22,20 @@ export default class EventsWebPart extends BaseClientSideWebPart<IEventsWebPartP
   private _environmentMessage: string = '';
 
   public render(): void {
-    const element: React.ReactElement<IEventsProps> = React.createElement(
-      Events,
-      {
-        description: this.properties.description,
-        isDarkTheme: this._isDarkTheme,
-        environmentMessage: this._environmentMessage,
-        hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName
-      }
-    );
+  const element: React.ReactElement<IEventsProps> = React.createElement(
+    Events,
+    {
+      description: this.properties.description,
+      isDarkTheme: this._isDarkTheme,
+      environmentMessage: this._environmentMessage,
+      hasTeamsContext: !!this.context.sdks.microsoftTeams,
+      userDisplayName: this.context.pageContext.user.displayName,
+      context: this.context // Add this line here
+    }
+  );
 
-    ReactDom.render(element, this.domElement);
-  }
+  ReactDom.render(element, this.domElement);
+}
 
   protected onInit(): Promise<void> {
     return this._getEnvironmentMessage().then(message => {
