@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { IEventsProps } from './IEventsProps';
-import { HttpClient, IHttpClientOptions, HttpClientResponse } from '@microsoft/sp-http';
+import { SPHttpClient, SPHttpClientResponse, ISPHttpClientOptions } from '@microsoft/sp-http';
 import { TextField, PrimaryButton, Checkbox, Stack, Label, Dropdown, IDropdownOption } from '@fluentui/react';
 import { DateTimePicker } from '@pnp/spfx-controls-react/lib/DateTimePicker';
 
@@ -72,41 +72,52 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
   private _triggerFlow = async (): Promise<void> => {
     this.setState({ loading: true });
 
-    // PASTE YOUR FLOW URL HERE
-    const flowUrl = "YOUR_POWER_AUTOMATE_HTTP_URL_HERE";
+    // Use the exact site URL where the list exists
+    const targetSiteUrl = "https://gcontrol.sharepoint.com/sites/test";
+
+    // Encoding the list name for the URL vs metadata
+    const listDisplayName = "Event Adder";
+    const listInternalName = "Event_x0020_Adder"; // Spaces in internal names become _x0020_
 
     const eventData = {
-      title: this.state.title,
-      startDateTime: this.state.startDateTime.toISOString(),
-      endDateTime: this.state.endDateTime.toISOString(),
-      calendars: this.state.selectedCalendars,
-      categories: this.state.selectedCategories,
-      location: this.state.location,
-      description: this.state.description,
-      addTeamsLink: this.state.addTeamsLink,
+      // SharePoint requires the __metadata type for POST requests to lists with spaces
+      '__metadata': { 'type': `SP.Data.${listInternalName}ListItem` },
+      Title: String(this.state.title),
+      Date: String(this.state.startDateTime.toISOString()),
+      EndDate: String(this.state.endDateTime.toISOString()),
+      Calendars: String(this.state.selectedCalendars.join(", ")),
+      Catergories: String(this.state.selectedCategories.join(", ")),
+      EventLocation: String(this.state.location),
+      Description: String(this.state.description),
+      AddTeamsLink: String(this.state.addTeamsLink)
     };
 
-    const options: IHttpClientOptions = {
-      body: JSON.stringify(eventData),
-      headers: { 'Content-Type': 'application/json' }
+    const options: ISPHttpClientOptions = {
+      headers: {
+        'Accept': 'application/json;odata=verbose',
+        'Content-type': 'application/json;odata=verbose',
+        'odata-version': ''
+      },
+      body: JSON.stringify(eventData)
     };
 
     try {
-      const response: HttpClientResponse = await this.props.context.httpClient.post(
-        flowUrl,
-        HttpClient.configurations.v1,
+      // POST to the specific subsite URL
+      const response: SPHttpClientResponse = await this.props.context.spHttpClient.post(
+        `${targetSiteUrl}/_api/web/lists/getbytitle('${listDisplayName}')/items`,
+        SPHttpClient.configurations.v1,
         options
       );
 
       if (response.ok) {
-        alert("Success! Event created via Power Automate.");
+        alert("Success! Event should be added to calendars shortly...");
       } else {
         const err = await response.text();
-        alert("Flow failed: " + err);
+        console.error("Detailed Error:", err);
+        alert("Still failing...");
       }
     } catch (error) {
-      console.error(error);
-      alert("Error calling Flow.");
+      console.error("Request failed:", error);
     } finally {
       this.setState({ loading: false });
     }
@@ -182,10 +193,10 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
             text={this.state.loading ? "Creating..." : "Create Event"}
             onClick={this._triggerFlow}
             disabled={
-              this.state.loading || 
-              !this.state.title || 
-              !this.state.startDateTime || 
-              !this.state.endDateTime || 
+              this.state.loading ||
+              !this.state.title ||
+              !this.state.startDateTime ||
+              !this.state.endDateTime ||
               this.state.selectedCalendars.length === 0
             }
           />
