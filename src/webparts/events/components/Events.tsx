@@ -3,6 +3,9 @@ import { IEventsProps } from './IEventsProps';
 import { SPHttpClient, SPHttpClientResponse, ISPHttpClientOptions } from '@microsoft/sp-http';
 import { TextField, PrimaryButton, Checkbox, Stack, Label, Dropdown, IDropdownOption } from '@fluentui/react';
 import { DateTimePicker } from '@pnp/spfx-controls-react/lib/DateTimePicker';
+import { initializeIcons } from '@fluentui/react/lib/Icons';
+
+initializeIcons();
 
 const CALENDAR_OPTIONS: IDropdownOption[] = [
   { key: 'Albany', text: 'Albany' },
@@ -37,6 +40,7 @@ export interface IEventsState {
   addTeamsLink: boolean;
   allDayEvent: boolean;
   loading: boolean;
+  hidden: boolean;
 }
 
 export default class Events extends React.Component<IEventsProps, IEventsState> {
@@ -52,7 +56,8 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
       description: '',
       addTeamsLink: false,
       allDayEvent: false,
-      loading: false
+      loading: false,
+      hidden: true
     };
   }
 
@@ -153,88 +158,123 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
     const stackTokens = { childrenGap: 20 };
 
     return (
-      <section style={{ padding: '20px', background: '#f4f4f4', borderRadius: '8px' }}>
-        <Stack tokens={stackTokens}>
-          <Label style={{ fontSize: '20px', borderBottom: '1px solid #ccc' }}>
-            Event Details
-          </Label>
-
-          <TextField
-            label="Event Title"
-            value={this.state.title}
-            onChange={(e, val) => this.setState({ title: val || "" })}
-          />
-
-          <Label>Enter time in EST, it will update accordingly for Texas</Label>
-
-          <DateTimePicker
-            label="Start"
-            value={this.state.startDateTime}
-            onChange={(date) => this.setState({ startDateTime: date as Date })}
-          />
-
-          <DateTimePicker
-            label="End"
-            value={this.state.endDateTime}
-            onChange={(date) => this.setState({ endDateTime: date as Date })}
-          />
-
-          <Checkbox
-            label="All day event? (If so dates must match)"
-            checked={this.state.allDayEvent}
-            onChange={(e, checked) => this.setState({ allDayEvent: !!checked })}
-          />
-
-          <Dropdown
-            label="Calendars"
-            placeholder="Select calendars"
-            multiSelect
-            options={CALENDAR_OPTIONS}
-            selectedKeys={this.state.selectedCalendars}
-            onChange={(e, o) => this._onDropdownChange(e, o, 'selectedCalendars')}
-          />
-
-          <Dropdown
-            label="Categories"
-            placeholder="Select categories"
-            multiSelect
-            options={CATEGORY_OPTIONS}
-            selectedKeys={this.state.selectedCategories}
-            onChange={(e, o) => this._onDropdownChange(e, o, 'selectedCategories')}
-          />
-
-          <TextField
-            label="Location"
-            value={this.state.location}
-            onChange={(e, val) => this.setState({ location: val || "" })}
-          />
-
-          <TextField
-            label="Description"
-            multiline
-            rows={3}
-            value={this.state.description}
-            onChange={(e, val) => this.setState({ description: val || "" })}
-          />
-
-          <Checkbox
-            label="Add Teams link?"
-            checked={this.state.addTeamsLink}
-            onChange={(e, checked) => this.setState({ addTeamsLink: !!checked })}
-          />
-
-          <PrimaryButton
-            text={this.state.loading ? "Creating..." : "Create Event"}
-            onClick={this._triggerFlow}
-            disabled={
-              this.state.loading ||
-              !this.state.title ||
-              !this.state.startDateTime ||
-              !this.state.endDateTime ||
-              this.state.selectedCalendars.length === 0
+      <section>
+        <PrimaryButton
+          iconProps={{ iconName: 'Calendar' }}
+          text={this.state.hidden ? "Create Event" : "Close"}
+          onClick={(e) => this.setState({ hidden: !this.state.hidden })}
+          styles={{
+            root: {
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: 'white'
+            },
+            rootHovered: {
+              backgroundColor: 'transparent',
+              color: 'white'
+            },
+            rootPressed: {
+              backgroundColor: 'transparent',
+              color: 'white'
+            },
+            icon: {
+              color: 'white'
+            },
+            iconHovered: {
+              color: 'white'
             }
-          />
-        </Stack>
+          }}
+        />
+
+        {!this.state.hidden && (
+          <section style={{
+            padding: '20px',
+            borderRadius: '8px',
+            marginTop: '10px'
+          }}>
+            <Stack tokens={stackTokens}>
+              <Label style={{ fontSize: '20px', borderBottom: '1px solid #ccc' }}>
+                Event Details
+              </Label>
+
+              <TextField
+                label="Event Title"
+                value={this.state.title}
+                onChange={(e, val) => this.setState({ title: val || "" })}
+              />
+
+              <Label>Enter time in EST, it will update accordingly for Texas</Label>
+
+              <DateTimePicker
+                label="Start"
+                value={this.state.startDateTime}
+                onChange={(date) => this.setState({ startDateTime: date as Date })}
+              />
+
+              <DateTimePicker
+                label="End"
+                value={this.state.endDateTime}
+                onChange={(date) => this.setState({ endDateTime: date as Date })}
+              />
+
+              <Checkbox
+                label="All day event? (If so dates must match)"
+                checked={this.state.allDayEvent}
+                onChange={(e, checked) => this.setState({ allDayEvent: !!checked })}
+              />
+
+              <Dropdown
+                label="Calendars"
+                placeholder="Select calendars"
+                multiSelect
+                options={CALENDAR_OPTIONS}
+                selectedKeys={this.state.selectedCalendars}
+                onChange={(e, o) => this._onDropdownChange(e, o, 'selectedCalendars')}
+              />
+
+              <Dropdown
+                label="Categories"
+                placeholder="Select categories"
+                multiSelect
+                options={CATEGORY_OPTIONS}
+                selectedKeys={this.state.selectedCategories}
+                onChange={(e, o) => this._onDropdownChange(e, o, 'selectedCategories')}
+              />
+
+              <TextField
+                label="Location"
+                value={this.state.location}
+                onChange={(e, val) => this.setState({ location: val || "" })}
+              />
+
+              <TextField
+                label="Description"
+                multiline
+                rows={3}
+                value={this.state.description}
+                onChange={(e, val) => this.setState({ description: val || "" })}
+              />
+
+              <Checkbox
+                label="Add Teams link?"
+                checked={this.state.addTeamsLink}
+                onChange={(e, checked) => this.setState({ addTeamsLink: !!checked })}
+              />
+
+              <PrimaryButton
+                text={this.state.loading ? "Creating..." : "Create Event"}
+                onClick={this._triggerFlow}
+                disabled={
+                  this.state.loading ||
+                  !this.state.title ||
+                  !this.state.startDateTime ||
+                  !this.state.endDateTime ||
+                  this.state.selectedCalendars.length === 0
+                }
+              />
+            </Stack>
+          </section>
+        )}
       </section>
     );
   }
