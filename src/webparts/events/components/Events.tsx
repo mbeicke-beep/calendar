@@ -35,6 +35,7 @@ export interface IEventsState {
   location: string;
   description: string;
   addTeamsLink: boolean;
+  allDayEvent: boolean;
   loading: boolean;
 }
 
@@ -50,6 +51,7 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
       location: '',
       description: '',
       addTeamsLink: false,
+      allDayEvent: false,
       loading: false
     };
   }
@@ -70,6 +72,23 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
   };
 
   private _triggerFlow = async (): Promise<void> => {
+    const { startDateTime, endDateTime, allDayEvent } = this.state;
+
+    if (endDateTime <= startDateTime) {
+      alert("Error: The End date/time must be after the Start date/time.");
+      return;
+    }
+
+    if (allDayEvent) {
+      const startStr = startDateTime.toDateString();
+      const endStr = endDateTime.toDateString();
+
+      if (startStr !== endStr) {
+        alert("Error: For All Day events, the Start and End dates must be the same day.");
+        return;
+      }
+    }
+
     this.setState({ loading: true });
 
     // Use the exact site URL where the list exists
@@ -79,17 +98,24 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
     const listDisplayName = "Event Adder";
     const listInternalName = "Event_x0020_Adder"; // Spaces in internal names become _x0020_
 
+    const nextDay = new Date(this.state.endDateTime);
+    nextDay.setDate(nextDay.getDate() + 1);
+
     const eventData = {
-      // SharePoint requires the __metadata type for POST requests to lists with spaces
       '__metadata': { 'type': `SP.Data.${listInternalName}ListItem` },
       Title: String(this.state.title),
-      Date: String(this.state.startDateTime.toISOString()),
-      EndDate: String(this.state.endDateTime.toISOString()),
+      Date: this.state.allDayEvent
+        ? this.state.startDateTime.toISOString().split('T')[0] + "T00:00:00Z"
+        : this.state.startDateTime.toISOString(),
+      EndDate: this.state.allDayEvent
+        ? nextDay.toISOString().split('T')[0] + "T00:00:00Z"
+        : this.state.endDateTime.toISOString(),
       Calendars: String(this.state.selectedCalendars.join(", ")),
       Catergories: String(this.state.selectedCategories.join(", ")),
       EventLocation: String(this.state.location),
       Description: String(this.state.description),
-      AddTeamsLink: String(this.state.addTeamsLink)
+      AddTeamsLink: String(this.state.addTeamsLink),
+      AllDayEvent: String(this.state.allDayEvent)
     };
 
     const options: ISPHttpClientOptions = {
@@ -139,6 +165,8 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
             onChange={(e, val) => this.setState({ title: val || "" })}
           />
 
+          <Label>Enter time in EST, it will update accordingly for Texas</Label>
+
           <DateTimePicker
             label="Start"
             value={this.state.startDateTime}
@@ -149,6 +177,12 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
             label="End"
             value={this.state.endDateTime}
             onChange={(date) => this.setState({ endDateTime: date as Date })}
+          />
+
+          <Checkbox
+            label="All day event? (If so dates must match)"
+            checked={this.state.allDayEvent}
+            onChange={(e, checked) => this.setState({ allDayEvent: !!checked })}
           />
 
           <Dropdown
