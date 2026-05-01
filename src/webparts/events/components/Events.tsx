@@ -96,12 +96,9 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
 
     this.setState({ loading: true });
 
-    // Use the exact site URL where the list exists
     const targetSiteUrl = "https://gcontrol.sharepoint.com/sites/test";
-
-    // Encoding the list name for the URL vs metadata
     const listDisplayName = "Event Adder";
-    const listInternalName = "Event_x0020_Adder"; // Spaces in internal names become _x0020_
+    const listInternalName = "Event_x0020_Adder";
 
     const nextDay = new Date(this.state.endDateTime);
     nextDay.setDate(nextDay.getDate() + 1);
@@ -133,7 +130,6 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
     };
 
     try {
-      // POST to the specific subsite URL
       const response: SPHttpClientResponse = await this.props.context.spHttpClient.post(
         `${targetSiteUrl}/_api/web/lists/getbytitle('${listDisplayName}')/items`,
         SPHttpClient.configurations.v1,
@@ -142,6 +138,16 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
 
       if (response.ok) {
         alert("Success! Event should be added to calendars shortly...");
+        this.setState({
+          hidden: true,
+          title: '',
+          location: '',
+          description: '',
+          selectedCalendars: [],
+          selectedCategories: [],
+          addTeamsLink: false,
+          allDayEvent: false
+        });
       } else {
         const err = await response.text();
         console.error("Detailed Error:", err);
@@ -174,7 +180,7 @@ export default class Events extends React.Component<IEventsProps, IEventsState> 
         <Panel
           isOpen={!this.state.hidden}
           onDismiss={() => this.setState({ hidden: true })}
-          type={PanelType.medium} // or medium / custom
+          type={PanelType.medium}
           headerText="Create Event"
           closeButtonAriaLabel="Close"
           style={{ padding: '20px', background: 'transparent', marginTop: '10px' }}>
